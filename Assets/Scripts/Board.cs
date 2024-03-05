@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data.Common;
+using System.Linq;
+using DG.Tweening;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class Board : MonoBehaviour
 {
@@ -13,6 +11,7 @@ public class Board : MonoBehaviour
 
 	public float cameraSizeOffset;
 	public float cameraVerticalOffset;
+	public float tweenDuration;
 
 	public GameObject[] avalaiblePieces;
 
@@ -25,8 +24,8 @@ public class Board : MonoBehaviour
 
 	void Start()
 	{
-		Tiles = new Tile[width,height];
-		Pieces = new Piece[width,height];
+		Tiles = new Tile[width, height];
+		Pieces = new Piece[width, height];
 		SetupBoard();
 		PositionCamera();
 		SetupPieces();
@@ -52,8 +51,8 @@ public class Board : MonoBehaviour
 			{
 				var o = Instantiate(tileObject, new Vector3(x, y, -5), Quaternion.identity);
 				o.transform.parent = transform;
-				Tiles[x,y] = o.GetComponent<Tile>();
-				Tiles[x,y]?.Setup(x, y, this);
+				Tiles[x, y] = o.GetComponent<Tile>();
+				Tiles[x, y]?.Setup(x, y, this);
 			}
 
 		}
@@ -65,11 +64,11 @@ public class Board : MonoBehaviour
 		{
 			for (int y = 0; y < height; y++)
 			{
-				var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0,avalaiblePieces.Length)];
+				var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
 				var o = Instantiate(selectedPiece, new Vector3(x, y, -5), Quaternion.identity);
 				o.transform.parent = transform;
-				Pieces[x,y] = o.GetComponent<Piece>();
-				Pieces[x,y]?.Setup(x, y, this);
+				Pieces[x, y] = o.GetComponent<Piece>();
+				Pieces[x, y]?.Setup(x, y, this);
 			}
 
 		}
@@ -90,6 +89,14 @@ public class Board : MonoBehaviour
 		if (startTile != null && endTile != null && IsCloseTo(startTile, endTile))
 		{
 			SwapTiles();
+			if (CanPop())
+			{
+				Pop();
+			}
+			else
+			{
+
+			}
 		}
 	}
 
@@ -101,8 +108,8 @@ public class Board : MonoBehaviour
 		StartPiece.Move(endTile.x, endTile.y);
 		EndPiece.Move(startTile.x, startTile.y);
 
-		Pieces[startTile.x , startTile.y] = EndPiece;
-		Pieces[endTile.x , endTile.y] = StartPiece;
+		Pieces[startTile.x, startTile.y] = EndPiece;
+		Pieces[endTile.x, endTile.y] = StartPiece;
 	}
 
 	public bool IsCloseTo(Tile start, Tile end)
@@ -112,5 +119,63 @@ public class Board : MonoBehaviour
 		if (Math.Abs(start.y - end.y) == 1 && start.x == end.x)
 			return true;
 		return false;
+	}
+
+	private bool CanPop()
+	{
+		for (var y = 0; y < height; y++)
+		{
+			for (var x = 0; x < width; x++)
+			{
+				if (Pieces[x, y].GetConnectedTiles().Skip(1).Count() >= 2) return true;
+			}
+		}
+		return false;
+	}
+
+	private async void Pop()
+	{
+		for (var y = 0; y < height; y++)
+		{
+			for (var x = 0; x < width; x++)
+			{
+				var piece = Pieces[x, y];
+
+				var connectedPieces = piece.GetConnectedTiles();
+
+				if (connectedPieces.Skip(1).Count() < 2) continue;
+
+				var deflateSequence = DOTween.Sequence();
+
+				foreach (var connectedPiece in connectedPieces)
+				{
+					deflateSequence.Join(connectedPiece.transform.DOScale(Vector3.zero, tweenDuration));
+				}
+
+				await deflateSequence.Play().AsyncWaitForCompletion();
+
+				var inflateSequence = DOTween.Sequence();
+
+				foreach (var connectedPiece in connectedPieces)
+				{
+					var x_ = connectedPiece.x;
+					var y_ = connectedPiece.y;
+					Destroy(connectedPiece);
+
+					var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
+					var o = Instantiate(selectedPiece, new Vector3(x_, y_, -5), Quaternion.identity);
+
+					o.transform.parent = transform;
+					o.transform.localScale = Vector3.zero;
+					
+					Pieces[x_, y_] = o.GetComponent<Piece>();
+					Pieces[x_, y_]?.Setup(x_, y_, this);
+
+					inflateSequence.Join(o.transform.DOScale(Vector3.one, tweenDuration));
+				}
+
+				await inflateSequence.Play().AsyncWaitForCompletion();
+			}
+		}
 	}
 }

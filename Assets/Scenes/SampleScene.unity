@@ -157,6 +157,7 @@ MonoBehaviour:
   tileObject: {fileID: 3078237875278597883, guid: 9d2aa4c8f50eb4c4cb307adfe030c8fa, type: 3}
   cameraSizeOffset: 0
   cameraVerticalOffset: 0
+  tweenDuration: 0.5
   avalaiblePieces:
   - {fileID: 179156604102758935, guid: 6cfb6156e13b62541bfc8ed640232552, type: 3}
   - {fileID: 179156604102758935, guid: 113ed8b58b6504c44bab8f100481b95e, type: 3}
