@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 public class Board : MonoBehaviour
 {
@@ -20,6 +22,9 @@ public class Board : MonoBehaviour
 
 	Tile startTile;
 	Tile endTile;
+
+	private int score = 0;
+	public TextMeshProUGUI textScore;
 
 
 	void Start()
@@ -161,13 +166,14 @@ public class Board : MonoBehaviour
 					var x_ = connectedPiece.x;
 					var y_ = connectedPiece.y;
 					Destroy(connectedPiece);
+					AddScore(3);
 
 					var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
 					var o = Instantiate(selectedPiece, new Vector3(x_, y_, -5), Quaternion.identity);
 
 					o.transform.parent = transform;
 					o.transform.localScale = Vector3.zero;
-					
+
 					Pieces[x_, y_] = o.GetComponent<Piece>();
 					Pieces[x_, y_]?.Setup(x_, y_, this);
 
@@ -177,5 +183,11 @@ public class Board : MonoBehaviour
 				await inflateSequence.Play().AsyncWaitForCompletion();
 			}
 		}
+	}
+
+	private void AddScore(int _score)
+	{
+		score += _score;
+		textScore.text = "Score: " + score.ToString("000#");
 	}
 }
