@@ -77,6 +77,7 @@ public class Board : MonoBehaviour
 			}
 
 		}
+		Pop();
 	}
 
 	public void TileDown(Tile tile_)
@@ -140,6 +141,8 @@ public class Board : MonoBehaviour
 
 	private async void Pop()
 	{
+		bool noPops = true;
+
 		for (var y = 0; y < height; y++)
 		{
 			for (var x = 0; x < width; x++)
@@ -180,9 +183,15 @@ public class Board : MonoBehaviour
 					inflateSequence.Join(o.transform.DOScale(Vector3.one, tweenDuration));
 				}
 
+				noPops = false;
+
 				await inflateSequence.Play().AsyncWaitForCompletion();
 			}
 		}
+
+		if (!noPops)
+			Pop();
+
 	}
 
 	private void AddScore(int _score)
