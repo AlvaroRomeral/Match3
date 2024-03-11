@@ -6,16 +6,6 @@ public class Tile : MonoBehaviour
 	public int y;
 	public Board board;
 
-	void Start()
-	{
-
-	}
-
-	void Update()
-	{
-
-	}
-
 	public void Setup(int x, int y, Board board)
 	{
 		this.x = x;

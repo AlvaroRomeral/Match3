@@ -23,10 +23,10 @@ public class Piece : MonoBehaviour
 	}
 	public types type;
 
-	public Piece Left => x > 0 ? board.Pieces[x - 1, y]: null;
-	public Piece Top => y > 0 ? board.Pieces[x, y - 1]: null;
-	public Piece Rigth => x < board.width - 1 ? board.Pieces[x + 1, y]: null;
-	public Piece Botton => y < board.height - 1 ? board.Pieces[x, y + 1]: null;
+	public Piece Left => x > 0 ? board.Pieces[x - 1, y] : null;
+	public Piece Top => y > 0 ? board.Pieces[x, y - 1] : null;
+	public Piece Rigth => x < board.width - 1 ? board.Pieces[x + 1, y] : null;
+	public Piece Botton => y < board.height - 1 ? board.Pieces[x, y + 1] : null;
 
 	public Piece[] Neighbours => new[]
 	{
@@ -35,16 +35,6 @@ public class Piece : MonoBehaviour
 		Rigth,
 		Botton,
 	};
-
-	void Start()
-	{
-
-	}
-
-	void Update()
-	{
-
-	}
 
 	public void Setup(int x, int y, Board board)
 	{
@@ -62,11 +52,11 @@ public class Piece : MonoBehaviour
 		};
 	}
 
-	[ContextMenu("Test Move")]
-	public void TestMove()
-	{
-		Move(0, 0);
-	}
+	// [ContextMenu("Test Move")]
+	// public void TestMove()
+	// {
+	// 	Move(0, 0);
+	// }
 
 	public List<Piece> GetConnectedTiles(List<Piece> exclude = null)
 	{

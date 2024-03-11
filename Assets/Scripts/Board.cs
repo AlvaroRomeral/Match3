@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SocialPlatforms.Impl;
 
@@ -69,15 +72,23 @@ public class Board : MonoBehaviour
 		{
 			for (int y = 0; y < height; y++)
 			{
-				var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
-				var o = Instantiate(selectedPiece, new Vector3(x, y, -5), Quaternion.identity);
-				o.transform.parent = transform;
-				Pieces[x, y] = o.GetComponent<Piece>();
-				Pieces[x, y]?.Setup(x, y, this);
+				while(true)
+				{
+					if (Pieces[x, y])
+						Destroy(Pieces[x, y].gameObject);
+					Pieces[x, y] = null;
+					
+					var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
+					var o = Instantiate(selectedPiece, new Vector3(x, y, -5), Quaternion.identity);
+					o.transform.parent = transform;
+					Pieces[x, y] = o.GetComponent<Piece>();
+					Pieces[x, y]?.Setup(x, y, this);
+
+					if (!CanPop()) break;
+				}
 			}
 
 		}
-		Pop();
 	}
 
 	public void TileDown(Tile tile_)
@@ -95,13 +106,14 @@ public class Board : MonoBehaviour
 		if (startTile != null && endTile != null && IsCloseTo(startTile, endTile))
 		{
 			SwapTiles();
+			
 			if (CanPop())
 			{
 				Pop();
 			}
 			else
 			{
-
+				// En caso de que quiera que no sea posible mover fichas si no hay posibilidad de hacer Pop
 			}
 		}
 	}
@@ -133,7 +145,8 @@ public class Board : MonoBehaviour
 		{
 			for (var x = 0; x < width; x++)
 			{
-				if (Pieces[x, y].GetConnectedTiles().Skip(1).Count() >= 2) return true;
+				if (Pieces[x, y])
+					if (Pieces[x, y].GetConnectedTiles().Skip(1).Count() >= 2) return true;
 			}
 		}
 		return false;
@@ -141,8 +154,6 @@ public class Board : MonoBehaviour
 
 	private async void Pop()
 	{
-		bool noPops = true;
-
 		for (var y = 0; y < height; y++)
 		{
 			for (var x = 0; x < width; x++)
@@ -150,8 +161,8 @@ public class Board : MonoBehaviour
 				var piece = Pieces[x, y];
 
 				var connectedPieces = piece.GetConnectedTiles();
-
-				if (connectedPieces.Skip(1).Count() < 2) continue;
+				
+				if (connectedPieces.Skip(1).Count() < 2) continue; // Si no hay mas de 2 piezas conectadas pasa, si lo hay, continua
 
 				var deflateSequence = DOTween.Sequence();
 
@@ -162,36 +173,85 @@ public class Board : MonoBehaviour
 
 				await deflateSequence.Play().AsyncWaitForCompletion();
 
-				var inflateSequence = DOTween.Sequence();
-
 				foreach (var connectedPiece in connectedPieces)
 				{
 					var x_ = connectedPiece.x;
 					var y_ = connectedPiece.y;
-					Destroy(connectedPiece);
-					AddScore(3);
 
-					var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
-					var o = Instantiate(selectedPiece, new Vector3(x_, y_, -5), Quaternion.identity);
+					Pieces[x_, y_] = null;
 
-					o.transform.parent = transform;
-					o.transform.localScale = Vector3.zero;
+					Destroy(connectedPiece.gameObject);
 
-					Pieces[x_, y_] = o.GetComponent<Piece>();
-					Pieces[x_, y_]?.Setup(x_, y_, this);
-
-					inflateSequence.Join(o.transform.DOScale(Vector3.one, tweenDuration));
+					AddScore(3); // Añadir diferentes puntuaciones dependiendo del animal Ej. conectedPiece.scorePoints
 				}
 
-				noPops = false;
+				// DropPieces();
 
-				await inflateSequence.Play().AsyncWaitForCompletion();
+				await RefillTiles();
+			}
+		}
+	}
+
+	private async void DropPieces()
+	{
+		bool pieceMoved = false;
+
+		for (var y = 0; y < height; y++)
+		{
+			for (var x = 0; x < width; x++)
+			{
+				var piece = Pieces[x, y];
+				if (piece)
+				{
+					if (piece.Botton == null && x != 0)
+					{
+						piece.Move(x, y - 1);
+						pieceMoved = true;
+					}
+				}
+
 			}
 		}
 
-		if (!noPops)
-			Pop();
+		if (pieceMoved)
+		{
+			DropPieces();
+		}
+		else
+		{
+			await RefillTiles();
+		}
+	}
 
+	private async Task RefillTiles()
+	{
+		var inflateSequence = DOTween.Sequence();
+		
+		for (var y = 0; y < height; y++)
+		{
+			for (var x = 0; x < width; x++)
+			{
+				if (Pieces[x, y] == null)
+				{
+					while(true)
+					{
+						if (Pieces[x, y])
+							Destroy(Pieces[x, y].gameObject);
+						Pieces[x, y] = null;
+						
+						var selectedPiece = avalaiblePieces[UnityEngine.Random.Range(0, avalaiblePieces.Length)];
+						var o = Instantiate(selectedPiece, new Vector3(x, y, -5), Quaternion.identity);
+						o.transform.parent = transform;
+						Pieces[x, y] = o.GetComponent<Piece>();
+						Pieces[x, y]?.Setup(x, y, this);
+
+						if (!CanPop()) break;
+					}
+				}
+			}
+		}
+
+		await inflateSequence.Play().AsyncWaitForCompletion();
 	}
 
 	private void AddScore(int _score)
@@ -199,4 +259,6 @@ public class Board : MonoBehaviour
 		score += _score;
 		textScore.text = "Score: " + score.ToString("000#");
 	}
+
+	
 }
